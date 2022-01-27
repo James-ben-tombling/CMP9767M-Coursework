@@ -6,31 +6,26 @@
 
 # Python libs
 from email.header import Header
-import math
+
 from ossaudiodev import SNDCTL_SEQ_CTRLRATE
-import sys, time
-from turtle import goto, width
-import time
+import sys
 import imutils
 import numpy as np
 from imutils import contours
 from skimage import measure
 from sklearn.cluster import DBSCAN
-from sklearn.datasets import make_blobs
+
 
 # OpenCV
 import cv2
-from cv2 import namedWindow, cvtColor, imshow, inRange, FILLED
-from cv2 import COLOR_BGR2GRAY, waitKey, COLOR_BGR2HSV
-from cv2 import blur, Canny, resize, INTER_CUBIC, drawContours
-
+from cv2 import Canny, cvtColor,inRange, COLOR_BGR2HSV
 # Global varibales 
 grapelist = [] # grape coords 
 vinelist = [] # vineyrad map list 
 VineyardParticles = 15000 # number of particles in vinyard mapping 
 
 # Ros libraries
-import roslib, rospy, image_geometry, tf
+import rospy, image_geometry, tf
 
 # Ros Messages
 import actionlib
@@ -117,13 +112,12 @@ class image_projection:
             Vine_location.pose.position.y = ccl[1]
             Vine_location.pose.position.z = ccl[2]
             v_camera = self.tf_listener.transformPose('map', Vine_location) # transform x, y z coordinates 
-            vinelist.append([v_camera.pose.position.x, v_camera.pose.position.y, v_camera.pose.position.z])   
-        Camera_cloud = point_cloud2.create_cloud(self.cam_header, self.cam_fields, vinelist )
-        self.Camera_PointCloud.publish(Camera_cloud)
-    def camera(self, data): #  def image_color_callback(self, data):
-        # wait for camera_model and depth image to arrive
+            vinelist.append([v_camera.pose.position.x, v_camera.pose.position.y, v_camera.pose.position.z])  # append list of world coords 
+        Camera_cloud = point_cloud2.create_cloud(self.cam_header, self.cam_fields, vinelist ) # make cloud 
+        self.Camera_PointCloud.publish(Camera_cloud) # publish cloud 
 
-        
+    def camera(self, data): #  main script for identifying , counting and plotting grape location
+        # wait for camera_model and depth image to arrive
         if self.camera_model is None:
             return
 
@@ -137,29 +131,29 @@ class image_projection:
 
         
         
-        image_color = cv2.resize(image_color, (1024,848))
+        image_color = cv2.resize(image_color, (1024,848)) # resize image 
         # image detection by colour filtering and image processing  
-        image_hsv = cvtColor(image_color, COLOR_BGR2HSV)
-        image_mask = inRange(image_hsv, (100,25,25), (190,255,255) )
-        imask = image_mask>0 
-        grape= np.zeros_like(image_hsv, np.uint8)
-        grape[imask] = image_hsv[imask] 
+        image_hsv = cvtColor(image_color, COLOR_BGR2HSV) # conver rgb to hsv
+        image_mask = inRange(image_hsv, (100,25,25), (190,255,255) ) # filter hsv
+        imask = image_mask>0 # remove anything not filtered 
+        grape= np.zeros_like(image_hsv, np.uint8) # zero
+        grape[imask] = image_hsv[imask] # add mask
 
-        grape_canny = Canny(grape, 10, 200)
-        rect=cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-        grape_dilate = cv2.dilate(grape_canny, rect,iterations = 10 )
-        grape_erode = cv2.erode(grape_dilate, rect, iterations=7)
+        grape_canny = Canny(grape, 10, 200) # canny algorithm 
+        rect=cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3)) # make a structual 
+        grape_dilate = cv2.dilate(grape_canny, rect,iterations = 10 ) # dilate binary image to remove holes 
+        grape_erode = cv2.erode(grape_dilate, rect, iterations=7) # erode back down to normal size 
         
-        nlabels, labels, stats, centroids = cv2.connectedComponentsWithStats(grape_erode, None, None, None, 8, cv2.CV_32S)
-        areas = stats[1:,cv2.CC_STAT_AREA]
-        grape_denoise = np.zeros((labels.shape), np.uint8)
+        nlabels, labels, stats, centroids = cv2.connectedComponentsWithStats(grape_erode, None, None, None, 8, cv2.CV_32S) # get labels for points 
+        areas = stats[1:,cv2.CC_STAT_AREA] # get area binary 
+        grape_denoise = np.zeros((labels.shape), np.uint8) # denoise binary image 
         
-        for i in range(0, nlabels - 1):
-            if areas[i] >= 900:   #keep
+        for i in range(0, nlabels - 1):  # specify the min size of binary blod to remove noise 
+            if areas[i] >= 900:   
                 grape_denoise[labels == i + 1] = 255
-        labels = measure.label(grape_denoise, neighbors=8, background=0)
-        mask = np.zeros(grape_denoise.shape, dtype="uint8")
-        for label in np.unique(labels):
+        labels = measure.label(grape_denoise, neighbors=8, background=0) # add labels 
+        mask = np.zeros(grape_denoise.shape, dtype="uint8") # mask noise 
+        for label in np.unique(labels): # label 
             if label == 0:
                 continue 
             labelMask = np.zeros(grape_denoise.shape, dtype="uint8")
@@ -170,14 +164,15 @@ class image_projection:
 
 
         # if no grapes are detected exit the loop and rescan in nexter iteration 
-        cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
+        cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, # find contours of binary blobs
             cv2.CHAIN_APPROX_SIMPLE)
-        cnts = imutils.grab_contours(cnts)
-        if len(cnts) == 0:
+        cnts = imutils.grab_contours(cnts) # get the countours 
+        if len(cnts) == 0: # if no garpes detcted restart 
             print('No grapes detected.')
             return
-        cnts = contours.sort_contours(cnts)[0]
+        cnts = contours.sort_contours(cnts)[0] # sort contours from left to right 
 
+        #cycle through each contour location (grape bunch)
         for (i, c) in enumerate(cnts) :
 
             (x, y, w, h) = cv2.boundingRect(c)
