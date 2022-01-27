@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+# made by James Tombling 
+# code based on image_projection_3.py  
+# https://github.com/LCAS/CMP9767M/blob/master/uol_cmp9767m_tutorial/scripts/image_projection_3.py
+# 
 
 # Python libs
 from email.header import Header
@@ -20,9 +24,11 @@ from cv2 import namedWindow, cvtColor, imshow, inRange, FILLED
 from cv2 import COLOR_BGR2GRAY, waitKey, COLOR_BGR2HSV
 from cv2 import blur, Canny, resize, INTER_CUBIC, drawContours
 
-grapelist = []
-vinelist = []
-VineyardParticles = 15000
+# Global varibales 
+grapelist = [] # grape coords 
+vinelist = [] # vineyrad map list 
+VineyardParticles = 15000 # number of particles in vinyard mapping 
+
 # Ros libraries
 import roslib, rospy, image_geometry, tf
 
@@ -42,75 +48,75 @@ class image_projection:
     
     camera_model = None
     image_depth_ros = None
-
     visualisation = True
     # aspect ration between color and depth cameras
     # calculated as (color_horizontal_FOV/color_width) / (depth_horizontal_FOV/depth_width) from the kinectv2 urdf file
     color2depth_aspect = (84.1/1920) / (70.0/512)
+    # init image projection node 
     rospy.init_node("image_projection")
     #Grape_PointCloud = rospy.Publisher("/Grape_PointCloud", PointCloud2, queue_size= 2)
+    
+    # data headers and fields for the grape point cloud 
     fields = [PointField('x', 0, PointField.FLOAT32, 1),PointField('y', 4, PointField.FLOAT32, 1),
             PointField('z', 8, PointField.FLOAT32, 1)]
     header = Header()
     header.frame_id = "map"
     header.stamp = rospy.Time.now()
-
+    
+    # data headers and fields for the grape point cloud
     cam_fields = [PointField('x', 0, PointField.FLOAT32, 1),PointField('y', 4, PointField.FLOAT32, 1),
             PointField('z', 8, PointField.FLOAT32, 1)]
     cam_header = Header()
     cam_header.frame_id = "map"
     cam_header.stamp = rospy.Time.now()
     
+    # initialise all Subs, Pubs, TF tranforms, and bridges 
     def __init__(self):    
-        #self.graplist = []
-        self.bridge = CvBridge()
         
+        self.bridge = CvBridge()
         self.camera = rospy.Subscriber('/camera', String, self.camera)
         self.vine_camera = rospy.Subscriber('/vine_camera', String, self.vine_camera)
         self.camera_info_sub = rospy.Subscriber('/thorvald_001/kinect2_left_camera/hd/camera_info', 
             CameraInfo, self.camera_info_callback)
-
         self.object_location_pub = rospy.Publisher('/thorvald_001/object_location', PoseStamped, queue_size=10)
         self.camera_pointcloud_sub = rospy.Subscriber('/thorvald_001/kinect2_left_sensor/sd/points', PointCloud2,
          self.camera_point_callback)
         rospy.Subscriber("/thorvald_001/kinect2_left_camera/hd/image_color_rect",
             Image, self.image_color_callback)
-
         rospy.Subscriber("/thorvald_001/kinect2_left_sensor/sd/image_depth_rect",
             Image, self.image_depth_callback)
         self.Camera_PointCloud = rospy.Publisher("/Camera_PointCloud", PointCloud2, queue_size=10)
         self.Grape_PointCloud = rospy.Publisher("/Grape_PointCloud", PointCloud2, queue_size=10)
-        # self.counter = 0
         self.tf_listener = tf.TransformListener()
 
-    def camera_point_callback(self, data):
+    def camera_point_callback(self, data): # set laser scan coordinates 
         self.camera_point_ros = data
 
-    def camera_info_callback(self, data):
+    def camera_info_callback(self, data): # setting kinect2 camera info 
         self.camera_model = image_geometry.PinholeCameraModel()
         self.camera_model.fromCameraInfo(data)
         self.camera_info_sub.unregister() #Only subscribe once
 
-    def image_depth_callback(self, data):
+    def image_depth_callback(self, data): # setup fo depth camera
         self.image_depth_ros = data
 
-    def image_color_callback(self, data):
+    def image_color_callback(self, data): # setup fro RGB camera data 
         self.image_colour_ros = data
 
-    def vine_camera(self,data):
+    def vine_camera(self,data): # triggered by publohser in controller.py
         ### print the current vinyard layout 
        
-        camera_cloud_data = point_cloud2.read_points(self.camera_point_ros, skip_nans= True)
-        camera_cloud_list = list(camera_cloud_data)
-        Vine_location = PoseStamped()
-        Vine_location.header.frame_id = "thorvald_001/kinect2_left_rgb_optical_frame"
-        for v in range(VineyardParticles):
-            ccl = camera_cloud_list[v]
+        camera_cloud_data = point_cloud2.read_points(self.camera_point_ros, skip_nans= True) # read cloud points from laser scan 
+        camera_cloud_list = list(camera_cloud_data) # turn data coords to a list 
+        Vine_location = PoseStamped() 
+        Vine_location.header.frame_id = "thorvald_001/kinect2_left_rgb_optical_frame" # set frame from camera location
+        for v in range(VineyardParticles): # step through every particle coordinate 
+            ccl = camera_cloud_list[v] # 
             Vine_location.pose.orientation.w = 1.0
             Vine_location.pose.position.x = ccl[0]
             Vine_location.pose.position.y = ccl[1]
             Vine_location.pose.position.z = ccl[2]
-            v_camera = self.tf_listener.transformPose('map', Vine_location)
+            v_camera = self.tf_listener.transformPose('map', Vine_location) # transform x, y z coordinates 
             vinelist.append([v_camera.pose.position.x, v_camera.pose.position.y, v_camera.pose.position.z])   
         Camera_cloud = point_cloud2.create_cloud(self.cam_header, self.cam_fields, vinelist )
         self.Camera_PointCloud.publish(Camera_cloud)
@@ -192,10 +198,9 @@ class image_projection:
             
             if np.isnan(depth_value):
                 print('nan detected')
-            
                 # depth_value = image_depth[int(depth_coords[0] + 0.002), int(depth_coords[1]+ 0.002)]
                 depth_value = 1.5
-                # continue
+               
             
             #print ('depth value: ', depth_value )
         # calculate object's 3d location in camera coords
