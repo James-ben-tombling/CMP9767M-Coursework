@@ -1,6 +1,6 @@
 # CMP9767M-Coursework
 Robotics programming 21/22
-
+## How to install and setup 
 ## How to run the code 
 
 1. in a new terminal $ `source /opt/ros/melodic/setup.bash` 
