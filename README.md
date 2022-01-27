@@ -9,13 +9,7 @@ then go to `/<your_catkin_ws>/src` using:
 
 $ `cd ~/your_catkin_ws/src`
 
-either downlaod the zip link directly and un pack `cmp9767m_cw_25913881` into this directory 
-
-***or**
-
-use a GitHub pull by using:
-
-$ `wget https://github.com/James-ben-tombling/CMP9767M-Coursework.git`
+downlaod the zip link directly and unpack `cmp9767m_cw_25913881` into this directory 
 
 then change dirctory back to `~/<your_catkin_ws>` and build your workspace 
 
