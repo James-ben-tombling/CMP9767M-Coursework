@@ -1,6 +1,32 @@
 # CMP9767M-Coursework
 Robotics programming 21/22
 ## How to install and setup 
+first make a folder in your home dirctory $ `cd ~ ` called `mongodb` by running the following a a new terminal: 
+
+$ `mkdir mongodb`
+
+then go to `/<your_catkin_ws>/src` using:
+
+$ `cd ~/your_catkin_ws/src`
+
+either downlaod the zip link directly and un pack `cmp9767m_cw_25913881` into this directory 
+
+***or**
+
+use a GitHub pull by using:
+
+$ `wget https://github.com/James-ben-tombling/CMP9767M-Coursework/tree/main/cmp9767m_cw_25913882 `
+
+then change dirctory back to `~/<your_catkin_ws>` and build your workspace 
+
+$ `cd ~/<your_catkin_ws> `
+
+$ `catkin_make`
+
+
+
+
+
 ## How to run the code 
 
 1. in a new terminal $ `source /opt/ros/melodic/setup.bash` 
