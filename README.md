@@ -15,7 +15,7 @@ either downlaod the zip link directly and un pack `cmp9767m_cw_25913881` into th
 
 use a GitHub pull by using:
 
-$ `wget https://github.com/James-ben-tombling/CMP9767M-Coursework/tree/main/cmp9767m_cw_25913882 `
+$ `wget https://github.com/James-ben-tombling/CMP9767M-Coursework.git`
 
 then change dirctory back to `~/<your_catkin_ws>` and build your workspace 
 
