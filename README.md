@@ -2,11 +2,11 @@
 Robotics programming 21/22
 ## Summary 
 This project use a topological naviagtion to navigate round a vineyard using the `controller.py` file, while doing so the `Thorvald` robot is stopping at certain waypoints and capturing data via the `identifier.py` using HSV thresholding and canny algorithms along with other image processing techniques, depth imagery and laser scans parallel to the RGB camera to plot the centroid of the identified bunchs aswell as mapping the vines them selves.
-the clustered coordinates of the centroids filtered by the passthrough.launch and are then put through a density clustering algorithm called `DBScan` to count the number of grape bunch accurately. 
+the clustered coordinates of the centroids filtered by the `passthrough.launch` and are then put through a density clustering algorithm called `DBScan` to count the number of grape bunch accurately. 
 
 - Grape bunches are colured according to their elivation red = low , purple = high 
 - Vines are plotted gray
-- **** the Global Varibale `VineyardParticles` allows you to adjust the amount of laser scan you can process for the vines depending on your computing power **** 
+- the Global Varibale `VineyardParticles` allows you to adjust the amount of laser scan you can process for the vines depending on your computing power 
 
 
 
