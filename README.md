@@ -59,4 +59,4 @@ $ `catkin_make`
 17. repeat steps ***3*** and ***4**
 18. launch $ `rosrun cmp9767m_cw_25913882 controller.py`
 
-Watch the identifier terminal to see the tested number of total bunch and RViz for they cloud point mapping of each bunch aswell as the point cloud of the vines.
+Watch the identifier terminal to see the total number of total bunch and RViz for they cloud point mapping of each bunch aswell as the point cloud of the vines.
